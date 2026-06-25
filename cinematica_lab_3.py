@@ -84,16 +84,63 @@ class LaboratorioApp:
         self.container_principal = tk.Frame(self.root, bg="#f0f0f0")
         self.container_principal.pack(fill=tk.BOTH, expand=True)
 
+        # Painel lateral externo fixo
         self.painel_esquerdo = tk.Frame(
             self.container_principal,
             bg="#e6e6e6",
-            width=300,
-            padx=10,
-            pady=10
+            width=320
         )
         self.painel_esquerdo.pack(side=tk.LEFT, fill=tk.Y)
         self.painel_esquerdo.pack_propagate(False)
 
+        # Canvas rolável para os controles
+        self.canvas_controles = tk.Canvas(
+            self.painel_esquerdo,
+            bg="#e6e6e6",
+            highlightthickness=0
+        )
+        self.canvas_controles.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.scrollbar_controles = tk.Scrollbar(
+            self.painel_esquerdo,
+            orient=tk.VERTICAL,
+            command=self.canvas_controles.yview
+        )
+        self.scrollbar_controles.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.canvas_controles.configure(
+            yscrollcommand=self.scrollbar_controles.set
+        )
+
+        # Frame interno que realmente receberá os controles
+        self.frame_controles = tk.Frame(
+            self.canvas_controles,
+            bg="#e6e6e6",
+            padx=10,
+            pady=10
+        )
+
+        self.janela_frame_controles = self.canvas_controles.create_window(
+            (0, 0),
+            window=self.frame_controles,
+            anchor="nw"
+        )
+
+        self.frame_controles.bind(
+            "<Configure>",
+            self.atualizar_area_rolagem_controles
+        )
+
+        self.canvas_controles.bind(
+            "<Configure>",
+            self.ajustar_largura_frame_controles
+        )
+
+        # Rolagem pelo mouse quando o cursor estiver sobre o painel
+        self.canvas_controles.bind("<Enter>", self.ativar_rolagem_mouse)
+        self.canvas_controles.bind("<Leave>", self.desativar_rolagem_mouse)
+
+        # Área direita do vídeo
         self.area_direita = tk.Frame(self.container_principal, bg="#f0f0f0")
         self.area_direita.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
@@ -125,9 +172,61 @@ class LaboratorioApp:
 
         self.bloquear_painel_configuracao()
 
+    def atualizar_area_rolagem_controles(self, event=None):
+        self.canvas_controles.configure(
+            scrollregion=self.canvas_controles.bbox("all")
+        )
+
+
+    def ajustar_largura_frame_controles(self, event=None):
+        largura_canvas = event.width
+        self.canvas_controles.itemconfig(
+            self.janela_frame_controles,
+            width=largura_canvas
+        )
+
+
+    def ativar_rolagem_mouse(self, event=None):
+        self.canvas_controles.bind_all(
+            "<MouseWheel>",
+            self.rolar_painel_controles
+        )
+
+
+    def desativar_rolagem_mouse(self, event=None):
+        self.canvas_controles.unbind_all("<MouseWheel>")
+
+
+    def rolar_painel_controles(self, event):
+        self.canvas_controles.yview_scroll(
+            int(-1 * (event.delta / 120)),
+            "units"
+        )
+    def ajustar_largura_frame_controles(self, event=None):
+        largura_canvas = event.width
+        self.canvas_controles.itemconfig(
+            self.janela_frame_controles,
+            width=largura_canvas
+        )
+
+
+    def ativar_rolagem_mouse(self, event=None):
+        self.canvas_controles.bind_all("<MouseWheel>", self.rolar_painel_controles)
+
+
+    def desativar_rolagem_mouse(self, event=None):
+        self.canvas_controles.unbind_all("<MouseWheel>")
+
+
+    def rolar_painel_controles(self, event):
+        self.canvas_controles.yview_scroll(
+            int(-1 * (event.delta / 120)),
+            "units"
+        )
+
     def criar_painel_controle(self):
         titulo = tk.Label(
-            self.painel_esquerdo,
+            self.frame_controles,
             text="Painel de controle",
             font=("Arial", 13, "bold"),
             bg="#e6e6e6"
@@ -135,7 +234,7 @@ class LaboratorioApp:
         titulo.pack(anchor="w", pady=(0, 10))
 
         self.btn_carregar = tk.Button(
-            self.painel_esquerdo,
+            self.frame_controles,
             text="Selecionar vídeo",
             font=("Arial", 10, "bold"),
             command=self.carregar_video
@@ -143,7 +242,7 @@ class LaboratorioApp:
         self.btn_carregar.pack(fill=tk.X, pady=3)
 
         self.btn_exportar = tk.Button(
-            self.painel_esquerdo,
+            self.frame_controles,
             text="Exportar resultados",
             font=("Arial", 10),
             command=self.exportar_resultados,
@@ -152,7 +251,7 @@ class LaboratorioApp:
         self.btn_exportar.pack(fill=tk.X, pady=3)
 
         self.btn_sobre = tk.Button(
-            self.painel_esquerdo,
+            self.frame_controles,
             text="Sobre",
             font=("Arial", 9),
             command=self.mostrar_sobre
@@ -160,7 +259,7 @@ class LaboratorioApp:
         self.btn_sobre.pack(fill=tk.X, pady=(3, 10))
 
         self.lbl_instrucao = tk.Label(
-            self.painel_esquerdo,
+            self.frame_controles,
             text="Selecione um vídeo para começar.",
             font=("Arial", 10),
             bg="#e6e6e6",
@@ -172,7 +271,7 @@ class LaboratorioApp:
 
         self.var_frame_atual = tk.StringVar(value="Frame atual: --")
         self.lbl_frame_atual = tk.Label(
-            self.painel_esquerdo,
+            self.frame_controles,
             textvariable=self.var_frame_atual,
             font=("Arial", 10, "bold"),
             bg="#e6e6e6"
@@ -180,7 +279,7 @@ class LaboratorioApp:
         self.lbl_frame_atual.pack(anchor="w")
 
         self.scale_frames = tk.Scale(
-            self.painel_esquerdo,
+            self.frame_controles,
             from_=0,
             to=0,
             orient=tk.HORIZONTAL,
@@ -227,7 +326,7 @@ class LaboratorioApp:
 
         self.criar_separador("Processamento")
         self.btn_processar = tk.Button(
-            self.painel_esquerdo,
+            self.frame_controles,
             text="Processar frames",
             font=("Arial", 11, "bold"),
             bg="#cdeccd",
@@ -238,7 +337,7 @@ class LaboratorioApp:
 
     def criar_separador(self, texto):
         lbl = tk.Label(
-            self.painel_esquerdo,
+            self.frame_controles,
             text=texto,
             font=("Arial", 10, "bold"),
             bg="#d0d0d0",
@@ -248,7 +347,7 @@ class LaboratorioApp:
         lbl.pack(fill=tk.X, pady=(8, 4))
 
     def criar_linha_entry(self, rotulo, variavel):
-        frame = tk.Frame(self.painel_esquerdo, bg="#e6e6e6")
+        frame = tk.Frame(self.frame_controles, bg="#e6e6e6")
         frame.pack(fill=tk.X, pady=2)
 
         lbl = tk.Label(frame, text=rotulo, bg="#e6e6e6", anchor="w", width=20)
@@ -260,7 +359,7 @@ class LaboratorioApp:
         self.widgets_configuracao.append(ent)
 
     def criar_linha_frame_central(self):
-        frame = tk.Frame(self.painel_esquerdo, bg="#e6e6e6")
+        frame = tk.Frame(self.frame_controles, bg="#e6e6e6")
         frame.pack(fill=tk.X, pady=2)
 
         lbl = tk.Label(frame, text="Frame central:", bg="#e6e6e6", anchor="w")
@@ -275,7 +374,7 @@ class LaboratorioApp:
         self.widgets_configuracao.extend([ent, btn])
 
     def criar_linha_ponto(self, rotulo, variavel, modo):
-        frame = tk.Frame(self.painel_esquerdo, bg="#e6e6e6")
+        frame = tk.Frame(self.frame_controles, bg="#e6e6e6")
         frame.pack(fill=tk.X, pady=2)
 
         lbl = tk.Label(frame, text=rotulo, bg="#e6e6e6", anchor="w", width=14)
@@ -301,7 +400,7 @@ class LaboratorioApp:
         self.widgets_configuracao.append(btn)
 
     def criar_linha_frame_tempo(self, nome, var_frame, var_tempo, tipo):
-        frame = tk.Frame(self.painel_esquerdo, bg="#e6e6e6")
+        frame = tk.Frame(self.frame_controles, bg="#e6e6e6")
         frame.pack(fill=tk.X, pady=2)
 
         lbl = tk.Label(frame, text=f"{nome} frame:", bg="#e6e6e6", width=8, anchor="w")
@@ -1136,18 +1235,22 @@ class LaboratorioApp:
             D = float(self.var_D.get().replace(",", "."))
             d = float(self.var_d.get().replace(",", "."))
 
-            if d <= 0 or D <= d:
+            if D <= 0 or d < 0 or d >= D:
                 raise ValueError
 
-            self.fator_paralaxe = (D - d) / d
+            # Correção para converter medidas aparentes na escala da parede
+            # para medidas reais no plano/linha de movimento do objeto.
+            self.fator_paralaxe = (D - d) / D
 
         except ValueError:
             messagebox.showerror(
                 "Erro",
                 "Paralaxe inválida.\n\n"
                 "Condições:\n"
-                "- D > d > 0\n"
-                "- valores numéricos válidos"
+                "- D > 0\n"
+                "- 0 <= d < D\n"
+                "- D é a distância da câmera até a fita métrica\n"
+                "- d é a distância do objeto até a fita métrica"
             )
             return
 
