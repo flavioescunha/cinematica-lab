@@ -366,9 +366,11 @@ class LaboratorioApp:
         lbl.pack(side=tk.LEFT)
 
         ent = tk.Entry(frame, textvariable=self.var_pico_frame, width=8)
+        ent.config(state="readonly")
+        ent.is_readonly_frame = True
         ent.pack(side=tk.LEFT, padx=4)
 
-        btn = tk.Button(frame, text="☝ atual", command=self.definir_frame_central)
+        btn = tk.Button(frame, text="📍 Atual", command=self.definir_frame_central)
         btn.pack(side=tk.RIGHT)
 
         self.widgets_configuracao.extend([ent, btn])
@@ -391,7 +393,7 @@ class LaboratorioApp:
 
         btn = tk.Button(
             frame,
-            text="☝",
+            text="🎯",
             width=3,
             command=lambda m=modo: self.ativar_captura_ponto(m)
         )
@@ -407,6 +409,8 @@ class LaboratorioApp:
         lbl.pack(side=tk.LEFT)
 
         ent_frame = tk.Entry(frame, textvariable=var_frame, width=6)
+        ent_frame.config(state="readonly")
+        ent_frame.is_readonly_frame = True
         ent_frame.pack(side=tk.LEFT)
 
         lbl_t = tk.Label(frame, text="s:", bg="#e6e6e6")
@@ -417,7 +421,7 @@ class LaboratorioApp:
 
         btn = tk.Button(
             frame,
-            text="☝ atual",
+            text="📍 Atual",
             command=lambda t=tipo: self.definir_frame_temporal(t)
         )
         btn.pack(side=tk.RIGHT)
@@ -434,7 +438,10 @@ class LaboratorioApp:
     def desbloquear_painel_configuracao(self):
         for w in self.widgets_configuracao:
             try:
-                w.config(state=tk.NORMAL)
+                if getattr(w, "is_readonly_frame", False):
+                    w.config(state="readonly")
+                else:
+                    w.config(state=tk.NORMAL)
             except Exception:
                 pass
 
@@ -1140,6 +1147,22 @@ class LaboratorioApp:
     def processar_analise(self):
         if self.cap is None:
             messagebox.showerror("Erro", "Selecione um vídeo primeiro.")
+            return
+
+        campos_texto = [
+            self.var_frames_offset.get(),
+            self.var_pico_frame.get(),
+            self.var_distancia_real.get(),
+            self.var_t0_frame.get(),
+            self.var_t0_tempo.get(),
+            self.var_tf_frame.get(),
+            self.var_tf_tempo.get(),
+            self.var_D.get(),
+            self.var_d.get()
+        ]
+        
+        if any(not c.strip() for c in campos_texto):
+            messagebox.showerror("Erro", "Por favor, preencha todos os campos em branco antes de processar.")
             return
 
         try:
